@@ -56,16 +56,29 @@ mongoose.connect(process.env.MONGO_KEY)  // pasiimam is .env failo reiksme
     console.log(e)
 })
 
-// let i=1
-//     const thisJob = schedule.scheduleJob('*/1 * * * * *', ()=>{
-        
-//         console.log(" schedules veikimas "+i)
-//         i++
-//         if(i>10){
-//             thisJob.cancel()
-//             console.log(" schedules veikimas baigesi ")
-//         }
-//     })
+const newUserModel= require("./models/newUserSchema")
+const auctionModel= require("./models/auctionSchema")
+
+async function showAll(){
+    const all = await auctionModel.find({time:{ $gte: Date.now() }})
+    console.log(all.length)
+}
+
+let i =1
+showAll()
+
+
+const thisJob = schedule.scheduleJob('*/1 * * * * *', ()=>{
+    
+    showAll()
+    console.log(" schedules veikimas "+i)
+    i++
+    if(i>10){
+        thisJob.cancel()
+        console.log(" schedules veikimas baigesi ")
+    }
+})
+
 io.on("connection", socket =>{
      console.log("socket connected...", "User connected: "+ socket.id)
     // console.log ("Now are connecting to server: "+io.engine.clientsCount)

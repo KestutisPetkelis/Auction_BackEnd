@@ -76,6 +76,7 @@ module.exports = {
             auction.time = Date.now()+data.time
             auction.startprice = Number(data.price)
             auction.sellprice= Number(data.price)
+            auction.active = true
             
             const newauction = await auction.save()
 

@@ -27,6 +27,10 @@ const auctionSchema = new Schema({
         type: Number,
         require:true
     },
+    active:{
+        type: Boolean,
+        require: true
+    },
     bids:{
         type:[
             {
