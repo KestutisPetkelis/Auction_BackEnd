@@ -104,7 +104,7 @@ module.exports = {
     },
     addbid: async (req,res) =>{
         const data = req.body
-        console.log("pridedam statymaa", data)
+        console.log("pridedam statyma", data)
         const newbid={
             username: data.username,
             bid: data.bid,
@@ -116,6 +116,23 @@ module.exports = {
         })
         res.send({message:"New bid has been added "})
     },
+    getuserinfo: async (req,res) =>{
+        //const data = req.body
+        //const {user} = req.params
+        const thisuser = req.session.user
+        if(thisuser){
+            //console.log("imam userio duomenis",  lll.username)
+            const activeuser = await newUserModel.findOne({username:thisuser.username})
+            return res.send({message:"info user ", activeuser})
+        }
+        
+        const activeuser=false
+        res.send({message:"info user undefined", activeuser})
+    },
+
+
+
+
         
         // const user = new userModel2()
         // user.username = data.name

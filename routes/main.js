@@ -4,7 +4,7 @@ const router = express.Router()
 const middle = require("../middleware/main")
 
 const {registeruser, loginuser, logout,createauction,
-    allauctions, getauction, addbid} =  require("../controllers/main")
+    allauctions, getauction, addbid, getuserinfo} =  require("../controllers/main")
 
 router.post("/registeruser", middle.validateData, registeruser)
 router.post("/login",loginuser)
@@ -13,7 +13,7 @@ router.post('/createauction', middle.validateAuction, createauction)
 router.get("/allauctions", allauctions)
 router.get("/auction/:id", getauction)
 router.post("/addbid", addbid)
-// router.get("/createuser",  createuser)
+router.get("/info", getuserinfo)
 // router.post("/createcar", createcar)
 // router.post("/findcar", findcar)
 // router.post("/findcarench", findcar2)

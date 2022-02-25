@@ -59,29 +59,34 @@ mongoose.connect(process.env.MONGO_KEY)  // pasiimam is .env failo reiksme
 const newUserModel= require("./models/newUserSchema")
 const auctionModel= require("./models/auctionSchema")
 
-async function showAll(){
-    const all = await auctionModel.find({time:{ $gte: Date.now() }})
-    console.log(all.length)
+async function controlBids(){
+    //const all = await auctionModel.find({time:{ $gte: Date.now() }})
+    const all = await auctionModel.find({active:true})
+    //console.log(all.length, all)
+    const endAuction = all.find(x=>x.time<=Date.now())
+    if (endAuction) {
+        console.log("endAuction'as.....",endAuction, endAuction.bids[endAuction.bids.length-1].username )
+        const winner = endAuction.bids[endAuction.bids.length-1].username
+        const currentUser = await newUserModel.findOne({username:winner})
+        const currentMoney = currentUser.money - endAuction.sellprice
+        await newUserModel.findOneAndUpdate({username:winner},{$set:{"money":currentMoney}})
+        await auctionModel.findOneAndUpdate({_id:endAuction._id},{$set:{"active":false}})
+    }
+
 }
 
-let i =1
-showAll()
-
-
-const thisJob = schedule.scheduleJob('*/1 * * * * *', ()=>{
-    
-    showAll()
-    console.log(" schedules veikimas "+i)
-    i++
-    if(i>10){
-        thisJob.cancel()
-        console.log(" schedules veikimas baigesi ")
-    }
-})
-
 io.on("connection", socket =>{
-     console.log("socket connected...", "User connected: "+ socket.id)
-    // console.log ("Now are connecting to server: "+io.engine.clientsCount)
+    console.log("socket connected...", "User connected: "+ socket.id)
+    console.log ("Now are connecting to server: "+io.engine.clientsCount)
+
+    const thisJob = schedule.scheduleJob('*/1 * * * * *', ()=>{
+    
+        controlBids()
+        
+    })
+
+
+
 
     // socket.on("connectUser", username=>{    // vartotojo prisijungima gaudom
     //     console.log(username)
