@@ -65,12 +65,20 @@ async function controlBids(){
     //console.log(all.length, all)
     const endAuction = all.find(x=>x.time<=Date.now())
     if (endAuction) {
-        console.log("endAuction'as.....",endAuction, endAuction.bids[endAuction.bids.length-1].username )
-        const winner = endAuction.bids[endAuction.bids.length-1].username
-        const currentUser = await newUserModel.findOne({username:winner})
-        const currentMoney = currentUser.money - endAuction.sellprice
-        await newUserModel.findOneAndUpdate({username:winner},{$set:{"money":currentMoney}})
+        if( endAuction.bids.length>0){
+            console.log("endAuction'as.....",endAuction, endAuction.bids[endAuction.bids.length-1].username )
+            const winner = endAuction.bids[endAuction.bids.length-1].username
+            const currentUser = await newUserModel.findOne({username:winner})
+            const currentMoney = currentUser.money - endAuction.sellprice
+            const bidUser= await newUserModel.findOne({username:endAuction.username})
+            const plusCurrentMoney = bidUser.money+endAuction.sellprice
+            if(currentMoney>=0){
+                await newUserModel.findOneAndUpdate({username:winner},{$set:{"money":currentMoney}})
+                await newUserModel.findOneAndUpdate({username:bidUser.username},{$set:{"money":plusCurrentMoney}})
+            }
+        }
         await auctionModel.findOneAndUpdate({_id:endAuction._id},{$set:{"active":false}})
+    
     }
 
 }
