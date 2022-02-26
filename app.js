@@ -59,118 +59,46 @@ mongoose.connect(process.env.MONGO_KEY)  // pasiimam is .env failo reiksme
 const newUserModel= require("./models/newUserSchema")
 const auctionModel= require("./models/auctionSchema")
 
-async function controlBids(){
+async function controlBids(){           // **** BID CONTROL MODULE **** //
     //const all = await auctionModel.find({time:{ $gte: Date.now() }})
-    const all = await auctionModel.find({active:true})
+    const all = await auctionModel.find({active:true})      // atrenkam aktyvius aukcionus  is bendros DB
     //console.log(all.length, all)
-    const endAuction = all.find(x=>x.time<=Date.now())
+    const endAuction = all.find(x=>x.time<=Date.now()) // tikrinam aktyvius aukcionus ar nera pasibaiges laikas
     if (endAuction) {
-        if( endAuction.bids.length>0){
+        if( endAuction.bids.length>0){      // vykdom tuo atveju, jei yra statymu, kitaip tiesiog deaktyvuojam
             console.log("endAuction'as.....",endAuction, endAuction.bids[endAuction.bids.length-1].username )
-            const winner = endAuction.bids[endAuction.bids.length-1].username
+            const winner = endAuction.bids[endAuction.bids.length-1].username   // aukciono laimetojas
             const currentUser = await newUserModel.findOne({username:winner})
             const currentMoney = currentUser.money - endAuction.sellprice
-            const bidUser= await newUserModel.findOne({username:endAuction.username})
+            const bidUser= await newUserModel.findOne({username:endAuction.username})   // aukciono kurejo objekto
             const plusCurrentMoney = bidUser.money+endAuction.sellprice
-            if(currentMoney>=0){
-                await newUserModel.findOneAndUpdate({username:winner},{$set:{"money":currentMoney}})
-                await newUserModel.findOneAndUpdate({username:bidUser.username},{$set:{"money":plusCurrentMoney}})
+            if(currentMoney>=0){        // jei laimetojas po keliu aukcionu turi pinigu sumoketi.... kitaip aukciona deaktyvuojam
+                await newUserModel.findOneAndUpdate({username:winner},{$set:{"money":currentMoney}}) // is laimetojo atimam pinigu
+                await newUserModel.findOneAndUpdate({username:bidUser.username},{$set:{"money":plusCurrentMoney}})  // aukciono kurejui pridedam pinigu
             }
         }
-        await auctionModel.findOneAndUpdate({_id:endAuction._id},{$set:{"active":false}})
+        await auctionModel.findOneAndUpdate({_id:endAuction._id},{$set:{"active":false}}) // pasibaigus laikui aukciona deaktyvuojam
     
     }
 
 }
+const thisJob = schedule.scheduleJob('*/1 * * * * *', ()=>{
+    
+    controlBids()
+    
+})
 
 io.on("connection", socket =>{
     console.log("socket connected...", "User connected: "+ socket.id)
     console.log ("Now are connecting to server: "+io.engine.clientsCount)
 
-    const thisJob = schedule.scheduleJob('*/1 * * * * *', ()=>{
-    
-        controlBids()
-        
+    socket.on("newAuction", message =>{
+        console.log(message)
+        io.emit('auctionToAll', message)
     })
-
-
-
-
-    // socket.on("connectUser", username=>{    // vartotojo prisijungima gaudom
-    //     console.log(username)
-    //     const user={
-    //         username: username,
-    //         id: socket.id,
-    //         points: 0
-    //     }
-        
-    //     if (users.length===0){
-    //         activeID= randomMaxMin(quiz.length-1,0)
-            
-    //     }
-    //     question = quiz[activeID]
-
-    //     users.push(user)
-    //     // ** isfiltruojam is masyvo pasikartojancius objektus pgl. id arba username (arba kitaip galima) **//
-    //     // ** pasikartojan2ius ir tuscius vardus isfiltrvom FrontEnd'e ** //
-    //     const seen = new Set();
-    //     const filteredArr = users.filter(el => {
-    //         const duplicate = seen.has(el.id);
-    //         seen.add(el.id);
-    //         return !duplicate;
-    //     });
-
-    //     users=[...filteredArr] //sudedam i masyva pagal unikalius socket.id
-
-    //     const someUser = users.find(x=>x.id===socket.id).username
-    //     const add=true // userio prisijungimo indikatorius (trigeris)
-
-    //     console.log(users, someUser, activeID, question)
-
-    //     io.emit('responseUsers', users, add, someUser, question)     // visiems userius išsiunčia
-        
-    // })
-
-    // socket.on("disconnect", ()=>{   // vartotojo atsijungima gaudom
-    //     let someUser
-    //     let add= false // userio atsijungimo indikatorius(trigeris)
-    //     if(users.length>0 && users.find(x=>x.id===socket.id))  { // apdorojam, kad nebutu klaidos pradzioje ir isjungiant tuscio userio socketa
-    //        someUser = users.find(x=>x.id===socket.id).username 
-    //     }else{
-    //         someUser = "" // tuscio userio atsijungimo apdorojimui reiksme
-            
-    //     }
-        
-    //     console.log (socket.id, users, someUser)
-
-    //     users = users.filter(x =>x.id!==socket.id)
-    //     io.emit('responseUsers', users, add, someUser)
-    // })
-
-    // socket.on("myAnswer", msg=>{
-    //     console.log(msg, socket.id)
-    //     chat.push(msg)
-    //     console.log(chat)
-    //     const id= socket.id
-    //     let correct
-    //     if(quiz[activeID].answer.toLowerCase()===msg.toLowerCase()){
-    //         const correctUser = users.find(x=>x.id===socket.id).username
-    //         const correctID =users.findIndex(x => x.id===socket.id)
-    //         users[correctID].points+=1
-    //         console.log("Atsakymas geras ", correctUser, correctID, users[correctID].points )
-    //         correct=true
-    //         activeID= randomMaxMin(quiz.length-1,0)
-    //         question = quiz[activeID]
-
-    //     }else{
-    //         console.log("Atsakymas negeras")
-    //         correct=false
-    //     }
-    //     //socket.broadcast.emit('response', msg)   // visiems isskyrus siunteja
-    //     io.emit('response', msg, id, correct, users, question)        // visiems žinutę išsiunčia
-    //     //io.emit('response', chat)     // visiems chat'ą išsiunčia
-
-    // })
-
+    socket.on("newBid", message =>{
+        console.log(message)
+        io.emit('auctionToAll', message)
+    })
 })
 
